@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discord 3L Scanner</title>
+<style>
+*{box-sizing:border-box}
+body{background:#0d0e13;color:#eee;font-family:Arial;padding:25px;margin:0}
+main{max-width:750px;margin:auto}
+h1{color:#7289ff}
+.panel{background:#181a23;padding:20px;border-radius:14px;margin:15px 0}
+button{background:#5865f2;color:white;border:0;padding:12px 18px;border-radius:8px;cursor:pointer;margin:5px}
+button:disabled{opacity:.5}
+input{background:#252735;color:white;border:1px solid #444;padding:10px;border-radius:7px;width:100%}
+.stats{display:flex;gap:10px}
+.stat{flex:1;background:#222431;padding:15px;border-radius:10px;text-align:center}
+.stat strong{display:block;font-size:25px}
+#results{max-height:350px;overflow:auto}
+.entry{padding:10px;border-bottom:1px solid #333;display:flex;justify-content:space-between}
+small{color:#aaa}
+</style>
+</head>
+<body>
+<main>
+<h1>Discord 3L Scanner</h1>
+<p><small>Three-letter username research tool</small></p>
+
+<div class="panel">
+<label>Scan limit</label>
+<input id="limit" type="number" value="100" min="1" max="17576">
+<button onclick="start()">Start Scan</button>
+<button onclick="stop()">Stop</button>
+<button onclick="reset()">Reset</button>
+<p id="status">Ready</p>
+<progress id="progress" value="0" max="100" style="width:100%"></progress>
+</div>
+
+<div class="stats">
+<div class="stat"><strong id="scanned">0</strong><small>Scanned</small></div>
+<div class="stat"><strong id="claimed">0</strong><small>Claimed</small></div>
+<div class="stat"><strong id="unknown">0</strong><small>Unverified</small></div>
+</div>
+
+<div class="panel">
+<h3>Results</h3>
+<p><small>This browser-only version generates candidates. It cannot verify ownership or availability through Discord.</small></p>
+<div id="results"></div>
+</div>
+</main>
+
+<script>
+let names=[],index=0,running=false;
+let claimed=0,unknown=0;
+
+function prepare(){
+ const chars="abcdefghijklmnopqrstuvwxyz";
+ names=[];
+ for(let a of chars)
+ for(let b of chars)
+ for(let c of chars)
+ names.push(a+b+c);
+}
+
+function render(name){
+ const div=document.createElement("div");
+ div.className="entry";
+ const label=document.createElement("span");
+ label.textContent=name;
+ const status=document.createElement("span");
+ status.textContent="Unverified";
+ status.style.color="#f0bd60";
+ div.append(label,status);
+ document.getElementById("results").append(div);
+}
+
+function start(){
+ if(running)return;
+ if(!names.length)prepare();
+ running=true;
+ let limit=Math.min(17576,Math.max(1,Number(document.getElementById("limit").value)||100));
+ const end=Math.min(index+limit,17576);
+ document.getElementById("status").textContent="Generating candidates...";
+ function batch(){
+  if(!running)return;
+  let count=0;
+  while(index<end && count<100){
+   render(names[index]);
+   index++;count++;unknown++;
+  }
+  document.getElementById("scanned").textContent=index;
+  document.getElementById("unknown").textContent=unknown;
+  document.getElementById("claimed").textContent=claimed;
+  document.getElementById("progress").value=index/17576*100;
+  if(index>=end){
+   running=false;
+   document.getElementById("status").textContent="Candidate generation complete";
+   return;
+  }
+  setTimeout(batch,20);
+ }
+ batch();
+}
+
+function stop(){
+ running=false;
+ document.getElementById("status").textContent="Paused";
+}
+
+function reset(){
+ stop();names=[];index=0;claimed=0;unknown=0;
+ document.getElementById("results").innerHTML="";
+ document.getElementById("scanned").textContent=0;
+ document.getElementById("claimed").textContent=0;
+ document.getElementById("unknown").textContent=0;
+ document.getElementById("progress").value=0;
+ document.getElementById("status").textContent="Ready";
+}
+</script>
+</body>
+</html>
